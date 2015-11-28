@@ -1,0 +1,180 @@
+\chapter{Τμήμα 1}
+
+Σκοπός του πρώτου τμήματος της εργαστηριακής άσκησης είναι η εισαγωγή και εμφάνιση των ΑΕΜ στα led της κάρτας STK500.
+Αρχικά, αποθηκεύονται τα ΑΕΜ σε μορφή BCD σαν constant words με την χρήση της εντολής \lstinline!.dw! και φορτώνονται στην μνήμη μέσω των εντολών \lstinline!lpm! και \lstinline!ldi! χρησιμοποιώντας τους Z καταχωρητές.
+\begin{lstlisting}
+;define student's info
+aem1dw: .dw $7796
+aem2dw: .dw $7853
+
+main:
+
+.def aem1H=R6
+.def aem1L=R7
+.def aem2H=R8
+.def aem2L=R9
+.def temp_carry=r24
+
+...
+
+;load aem1 in memory
+ldi ZH,high(2 * aem1dw)
+ldi ZL,low(2 * aem1dw)
+lpm aem1L, Z+
+lpm aem1H, Z
+
+;load aem2 in memory
+ldi ZH,high(2 * aem2dw)
+ldi ZL,low(2 * aem2dw)
+lpm aem2L, Z+
+lpm aem2H, Z
+\end{lstlisting}
+
+Στη συνέχεια, φορτώνουμε ένα-ένα τα ψηφία των ΑΕΜ στους καταχωρητές \lstinline!r16! με \lstinline!r23! και αποθηκεύουμε το άθροισμα τους στους καταχωρητές \lstinline!r16! με \lstinline!r19!
+\begin{lstlisting}
+;aem2 in digits
+ldi r16,0x03
+ldi r17,0x05
+ldi r18,0x08
+ldi r19,0x07
+
+;aem1 in digits
+ldi r20,0x06
+ldi r21,0x09
+ldi r22,0x07
+ldi r23,0x07
+
+; add digits one by one
+add r16,r20
+add r17,r21
+add r18,r22
+add r19,r23
+\end{lstlisting}
+
+Ελέγχουμε από το τέλος για κάθε ψηφίο αν υπάρχει carry (δηλαδή να είναι μεγαλύτερο από το $10$)
+και αν ναι, αφαιρούμε $10$ και προσθέτουμε ένα στον επόμενο ψηφίο.
+
+\begin{lstlisting}
+cpi r16,0x0A
+; if r16 is smaller than 10 jump to next comparison
+brlo cmp17
+subi r16,0x0A
+subi r17,-1
+
+cmp17:
+cpi r17,0x0A
+brlo cmp18
+subi r17,0x0A
+subi r18,-1
+
+cmp18:
+cpi r18,0x0A
+brlo cmp19
+subi r18,0x0A
+subi r19,-1
+
+cmp19:
+cpi r19, 0x0A
+brlo cmpend
+subi r19,0x0A
+
+cmpend:
+\end{lstlisting}
+
+Αν το τελευταίο (πιο σημαντικό) ψηφίο είναι μεγαλύτερο από το $10$ τότε αφαιρούμε $10$ και το αφήνουμε ως έχει. Δηλαδή, για τα ΑΕΜ $7796$ και $7853$ θεωρούμε ότι το αποτέλεσμα είναι $5649$ και όχι $F649$.
+
+Το τελικό αποτέλεσμα φορτώνεται στις θέσεις μνήμης \lstinline!0x0060! με \lstinline!0x0064! της SRAM.
+\begin{lstlisting}
+; move digits to SRAM
+sts 0x0060, r19
+sts 0x0061, r18
+sts 0x0062, r17
+sts 0x0063, r16
+\end{lstlisting}
+
+Για την έξοδο στα led χρησιμοποιούμε το PORTB και του θέτουμε την τιμή \lstinline!0xFF! για να το ορίσουμε ως έξοδο.
+\begin{lstlisting}
+;define PORTB as exit
+.def temp=r25
+ser temp
+out DDRB,temp
+\end{lstlisting}
+
+Για την εμφάνιση των ψηφίων χρησιμοποιούνται οι ρουτίνες
+\lstinline!show_aem1_digits! και \lstinline!show_aem2_digits!
+Σε κάθε στιγμή απεικονίζονται 2 ψηφία στα leds, 4 leds χρησιμοποιούνται για κάθε ψηφίο.
+Στη συνέχεια, η ρουτίνα
+\lstinline!delay10! χρησιμοποιείται για την δημιουργία χρονικής καθυστέρησης 10 δευτερολέπτων για συχνότητα ρολογιού 4MHz.
+Η εντολή \lstinline!com! χρησιμοποιείται για την αντιστροφή των bit των καταχωρητών (συμπλήρωμα του $1$) καθώς η κάρτα ST500 χρησιμοποιεί αντίστροφη λογική για την χρήση των led.
+\begin{lstlisting}
+show_aem1_digits:
+    ; load on portb a 8-bit register with 2 last digits
+    ldi r18, 0x06
+    ldi r19, 0x09
+    swap r19
+    or r19,r18
+    ; r19 was 1 for active led but st500 has inverted logic
+    ; because of that we use 1-complement
+    com r19
+    out PORTB,r19
+    rcall delay10
+    ldi r18, 0x07
+    ldi r19, 0x07
+    swap r19
+    or r19,r18
+    com r19
+    out PORTB,r19
+    rcall delay10
+    ret
+
+show_aem2_digits:
+    ldi r18, 0x03
+    ldi r19, 0x05
+    swap r19
+    or r19,r18
+    com r19
+    out PORTB,r19
+    rcall delay10
+    ldi r18, 0x08
+    ldi r19, 0x07
+    swap r19
+    or r19,r18
+    com r19
+    out PORTB,r19
+    rcall delay10
+    ret
+
+; Delay 40 000 000 cycles
+; 10s at 4 MHz
+delay10:
+    ldi  r18, 203
+    ldi  r19, 236
+    ldi  r20, 133
+delay10L1: dec  r20
+    brne delay10L1
+    dec  r19
+    brne delay10L1
+    dec  r18
+    brne delay10L1
+    ret
+\end{lstlisting}
+
+Τελικά, εμφανίζονται και τα ψηφία του αθροίσματος με τον ίδιο τροπο.
+\begin{lstlisting}
+; show digits from addition
+lds r19,0x0062
+lds r18,0x0063
+swap r19
+or r19,r18
+com r19
+out PORTB,r19
+rcall delay10
+
+lds r19,0x0060
+lds r18,0x0061
+swap r19
+or r19,r18
+com r19
+out PORTB,r19
+rcall delay10
+\end{lstlisting}

@@ -19,14 +19,15 @@
 *.fls
 *.out
 *.toc
+*.fmt
 
 ## Intermediate documents:
 *.dvi
 *-converted-to.*
 # these rules might exclude image files for figures etc.
-# *.ps
-# *.eps
-# *.pdf
+*.ps
+*.eps
+*.pdf
 
 ## Bibliography auxiliary files (bibtex/biblatex/biber):
 *.bbl
@@ -150,3 +151,13 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+# AVR
+*.txt
+*.cof
+*.hex
+*.tmp
+*.bak
+*.obj
+*.bat
+*.map
+*.aws

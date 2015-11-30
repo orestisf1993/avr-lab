@@ -23,13 +23,9 @@ main:
 ;init stack pointer
 
 SPI_INIT:
-
 ldi r25,low(RAMEND)
-
 out Spl,r25
-
 ldi r25,high(RAMEND)
-
 out sph,r25
 
 ;load aem1 in memory
@@ -164,53 +160,53 @@ digits0:
     jmp digits0
     rcall show_addition_digit1
 pressed1:
-	in r22,PIND
-	sbrc r22,3
-	jmp pressed1
+    in r22,PIND
+    sbrc r22,3
+    jmp pressed1
 digits1:
     in r22,PIND
     sbrs r22,3
     jmp digits1
-	rcall show_addition_digit2
+    rcall show_addition_digit2
 pressed2:
-	in r22,PIND
-	sbrc r22,3
-	jmp pressed2
+    in r22,PIND
+    sbrc r22,3
+    jmp pressed2
 digits2:
     in r22,PIND
     sbrs r22,3
     jmp digits2
-	rcall show_addition_digit3
+    rcall show_addition_digit3
 pressed3:
-	in r22,PIND
-	sbrc r22,3
-	jmp pressed3
+    in r22,PIND
+    sbrc r22,3
+    jmp pressed3
 digits3:
     in r22,PIND
     sbrs r22,3
     jmp digits3
-	rcall show_addition_digit4
+    rcall show_addition_digit4
     ret
 
 show_addition_digit1:
-	lds r19,0x0060
-	com r19
-	out PORTB,r19
+    lds r19,0x0060
+    com r19
+    out PORTB,r19
     ret
 show_addition_digit2:
-	lds r19,0x0061
-	com r19
-	out PORTB,r19
+    lds r19,0x0061
+    com r19
+    out PORTB,r19
     ret
 show_addition_digit3:
-	lds r19,0x0062
-	com r19
-	out PORTB,r19
+    lds r19,0x0062
+    com r19
+    out PORTB,r19
     ret
 show_addition_digit4:
-	lds r19,0x0063
-	com r19
-	out PORTB,r19
+    lds r19,0x0063
+    com r19
+    out PORTB,r19
     ret
 
 

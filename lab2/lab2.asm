@@ -30,8 +30,15 @@ out PORTB, temp
 ldi ZL, low(2*gradesa)
 ldi ZH, high(2*gradesa)
 
-.def i=r24
-clr i ; our counter
+.def i=r24 ; our counter
+.def grade=r19
+.def sum=r6 ; our sum
+.def decades=r4 ; number of decades
+.def studentid=r20 ; current student
+clr sum
+clr decades
+clr i
+clr studentid
 ;loop all memory
 read_loop:
 
@@ -39,13 +46,55 @@ lpm r16, Z
 adiw ZL, 1
 lpm r17, Z
 adiw ZL, 1
+
+mov grade,r16 ; Backup grade
+
 rcall combine_leds
 rcall flash_leds
 
-; for (i=0; i<12; i++)
-adiw i,0x01
-cpi i,12
-brlo read_loop
+; add to sum
+; if the 0-th bit is set then grade is XY.5
+; so, if the 0-th bit is cleared don't add to halfs counter
+;sbrc grade, 0
+;inc halfs
+; add 10 if the decade bit is set
+sbrc grade, 5
+inc decades
+
+;lsr grade
+; mask it so we only sum the 5 lsb
+andi grade,0b00011111
+add sum,grade
+
+inc i
+cpi i,6
+brlo read_loop ; loop until all student's grades are iterated
+
+inc studentid
+; calculate accurate sum
+
+clr r5
+sbrc sum, 0
+inc r5
+lsr sum
+
+ldi temp, 10
+mul decades,temp ; Multiply unsigned decades with 10
+movw decades,r0 ; Copy result back in decades
+clr r1
+add sum, decades
+
+mov r24, sum
+mov r22, r5
+rcall find_average
+; open corresponding LEDs
+
+; reset i and if there is another student loop again
+clr i
+clr sum
+clr decades
+cpi studentid,2
+brne read_loop
 
 ret
 
@@ -106,4 +155,39 @@ delay5:
     ret
 
 delay05:
+    ret
+
+find_average:
+    ; sum is at r24
+    ; halfs is at r22
+    ; divide sum by 6
+    ldi r18,-85
+    mul r24,r18
+    mov r18,r1
+    clr r1
+    lsr r18
+    lsr r18
+    mov r19,r18
+    lsl r19
+    add r19,r18
+    lsl r19
+    sub r24,r19
+    ; r24 is now sum % 6
+    cpi r24,2
+    brlo L2
+    cpi r24,5
+    brlo L3
+    cpi r24,5
+    brne L2
+    subi r18,-1
+L2:
+    mov r24,r18
+    mov r25,r22
+    ret
+L3:
+    add r18,r22
+    ldi r24,1
+    eor r22,r24
+    mov r24,r18
+    mov r25,r22
     ret

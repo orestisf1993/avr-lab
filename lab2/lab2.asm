@@ -29,6 +29,8 @@ out PORTB, temp
 
 ldi ZL, low(2*gradesa)
 ldi ZH, high(2*gradesa)
+ldi XL, low(0x0060)
+ldi XH, high(0x0060)
 
 .def i=r24 ; our counter
 .def grade=r19
@@ -52,11 +54,6 @@ mov grade,r16 ; Backup grade
 rcall combine_leds
 rcall flash_leds
 
-; add to sum
-; if the 0-th bit is set then grade is XY.5
-; so, if the 0-th bit is cleared don't add to halfs counter
-;sbrc grade, 0
-;inc halfs
 ; add 10 if the decade bit is set
 sbrc grade, 5
 inc decades
@@ -73,21 +70,31 @@ brlo read_loop ; loop until all student's grades are iterated
 inc studentid
 ; calculate accurate sum
 
-clr r5
-sbrc sum, 0
-inc r5
+; remove 0-th bit by shifting
 lsr sum
 
 ldi temp, 10
 mul decades,temp ; Multiply unsigned decades with 10
 movw decades,r0 ; Copy result back in decades
-clr r1
 add sum, decades
 
 mov r24, sum
-mov r22, r5
 rcall find_average
-; open corresponding LEDs
+
+cpi r24, 10
+breq remove10
+lsl r24
+or r24,r25
+mov temp, studentid
+swap temp
+lsl temp
+lsl temp
+or r24, temp
+com r24
+st X+, r24
+
+continue:
+
 
 ; reset i and if there is another student loop again
 clr i
@@ -96,7 +103,27 @@ clr decades
 cpi studentid,2
 brne read_loop
 
+; open corresponding LEDs
+lds r25, 0x0060
+rcall display_average
+rcall delay2
+
+lds r25, 0x0061
+rcall display_average
+
+;
+
 ret
+
+display_average:
+	out PORTB,r25
+	rcall delay5
+	ser r18
+	out PORTB,r18
+
+remove10:
+	ldi r24, 32 ; set 5-th bit, all other are cleared
+	jmp continue
 
 read_pdata:
     ldi ZL, low(2*gradesa)
@@ -151,43 +178,47 @@ flash_leds:
     ret
 
 ;TODO
+delay2:
+	ret
+
 delay5:
     ret
 
 delay05:
     ret
 
+; returns r25 as sum, r24 as halfs
 find_average:
     ; sum is at r24
-    ; halfs is at r22
     ; divide sum by 6
     ldi r18,-85
     mul r24,r18
     mov r18,r1
-    clr r1
     lsr r18
     lsr r18
-    mov r19,r18
-    lsl r19
-    add r19,r18
-    lsl r19
-    sub r24,r19
+    mov r25,r18
+    lsl r25
+    add r25,r18
+    lsl r25
+    sub r24,r25
     ; r24 is now sum % 6
     cpi r24,2
-    brlo L2
+    brlo L5
     cpi r24,5
     brlo L3
     cpi r24,5
-    brne L2
+    brne L5
     subi r18,-1
-L2:
+	; r25 is halfs flag
+	; r24 is average
+    ldi r25,0
     mov r24,r18
-    mov r25,r22
+    ret
+L5:
+    ldi r25,0
+    mov r24,r18
     ret
 L3:
-    add r18,r22
-    ldi r24,1
-    eor r22,r24
+    ldi r25,1
     mov r24,r18
-    mov r25,r22
     ret

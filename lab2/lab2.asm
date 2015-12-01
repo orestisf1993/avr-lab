@@ -106,30 +106,121 @@ brne read_loop
 ; open corresponding LEDs
 lds r25, 0x0060
 rcall display_average
+ser r18
+out PORTB,r18
 rcall delay2
 
 lds r25, 0x0061
 rcall display_average
+ser r18
+out PORTB,r18
 
-;
+;PART2
+;define PORTD as input
+ser r18
+out PORTB,r18
+clr r18
+out DDRD,r18
+.def whichpressed=r23
 
+;wait in this loop until the user press a switch
+wait_loop:
+in r22,PIND
+ldi studentid, 1
+
+sbrs r22,0
+ldi whichpressed,0
+sbrs r22,1
+ldi whichpressed,1
+sbrs r22,2
+ldi whichpressed,2
+sbrs r22,3
+ldi whichpressed,3
+sbrs r22,4
+ldi whichpressed,4
+sbrs r22,5
+ldi whichpressed,5
+
+sbrs r22,7
+jmp display_average_button
+ser temp
+cpse r22, temp
+rcall display_grade_button
+
+jmp wait_loop
+
 ret
-
-display_average:
-	out PORTB,r25
-	rcall delay5
-	ser r18
-	out PORTB,r18
 
 remove10:
 	ldi r24, 32 ; set 5-th bit, all other are cleared
 	jmp continue
 
-read_pdata:
-    ldi ZL, low(2*gradesa)
+display_average_button:
+	; wait until switch is released
+sw7_loop:
+    in r22,PIND
+    sbrs r22,7
+    jmp sw7_loop
+    
+	cpi studentid, 2
+	breq sw7_isstudent2
+	lds r25, 0x0060
+	ldi studentid, 2
+	jmp continue_to_display
+sw7_isstudent2:
+	lds r25, 0x0061
+	ldi studentid, 1
+continue_to_display:
+	out PORTB,r25
+	ser temp
+wait_next_press7:
+	in r22,PIND
+	sbrs r22, 7
+	jmp sw7_loop
+	cpse r22, temp
+	jmp wait_loop
+	jmp wait_next_press7
+
+display_grade_button:
+	ser temp
+sw_loop:
+	in r22, PIND
+	; wait until all unpressed
+	cpse r22, temp
+	jmp sw_loop
+
+	cpi studentid, 2
+	breq isstudent2
+	ldi ZL, low(2*gradesa)
     ldi ZH, high(2*gradesa)
-    add ZL, r16
-    add ZL, r16
+	ldi studentid, 2
+	jmp continue_to_display_grade
+isstudent2:
+	ldi ZL, low(2*gradesb)
+    ldi ZH, high(2*gradesb)
+	ldi studentid, 1
+continue_to_display_grade:
+	rcall read_data
+	rcall combine_leds
+	rcall flash_leds
+	ser temp
+wait_next_press:
+	in r22,PIND
+	sbrs r22, 6
+	jmp sw_loop
+	cpse r22, temp
+	ret
+	jmp wait_next_press
+	
+
+display_average:
+	out PORTB,r25
+	rcall delay5
+
+read_data:
+	;adiw?
+    add ZL, whichpressed
+    add ZL, whichpressed
     lpm r16, Z
     adiw ZL, 1
     lpm r17, Z

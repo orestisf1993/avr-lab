@@ -268,19 +268,76 @@ flash_leds:
 
     ret
 
-;TODO
+; Delay 8 000 000 cycles
+; 2s at 4 MHz
 delay2:
+	push r18
+	push r19
+	push r20
+    ldi  r18, 41
+    ldi  r19, 150
+    ldi  r20, 128
+L1delay2:
+	dec  r20
+    brne L1delay2
+    dec  r19
+    brne L1delay2
+    dec  r18
+    brne L1delay2
+	; restore used registers
+	pop r20
+	pop r19
+	pop r18
 	ret
 
+; Delay 20 000 000 cycles
+; 5s at 4 MHz
 delay5:
+	push r18
+	push r19
+	push r20
+    ldi  r18, 102
+    ldi  r19, 118
+    ldi  r20, 194
+L1delay5: 
+	dec  r20
+    brne L1delay5
+    dec  r19
+    brne L1delay5
+    dec  r18
+    brne L1delay5
+	; restore used registers
+	pop r20
+	pop r19
+	pop r18
     ret
 
+; Delay 2 000 000 cycles
+; 500ms at 4 MHz
 delay05:
+	push r18
+	push r19
+	push r20
+    ldi  r18, 11
+    ldi  r19, 38
+    ldi  r20, 94
+L1delay05: 
+	dec  r20
+    brne L1delay05
+    dec  r19
+    brne L1delay05
+    dec  r18
+    brne L1delay05
+    rjmp PC+1
+	; restore used registers
+	pop r20
+	pop r19
+	pop r18
     ret
 
-; returns r25 as sum, r24 as halfs
+; params r24 as sum
+; returns r25 as decimals part, r24 as halfs flag
 find_average:
-    ; sum is at r24
     ; divide sum by 6
     ldi r18,-85
     mul r24,r18
@@ -294,22 +351,19 @@ find_average:
     sub r24,r25
     ; r24 is now sum % 6
     cpi r24,2
-    brlo L5
+    brlo round_down
     cpi r24,5
-    brlo L3
-    cpi r24,5
-    brne L5
+    brlo round_half
+	; round up
     subi r18,-1
-	; r25 is halfs flag
-	; r24 is average
     ldi r25,0
     mov r24,r18
     ret
-L5:
+round_down:
     ldi r25,0
     mov r24,r18
     ret
-L3:
+round_half:
     ldi r25,1
     mov r24,r18
     ret

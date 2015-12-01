@@ -1,0 +1,146 @@
+\chapter{Τμήμα 2}
+
+Στο δεύτερο τμήμα της εργαστηριακής άσκησης το πρόγραμμα παραμένει σε ένα βρόχο αναμονής έως ότου πατηθούν
+και απελευθερωθούν οι διακόπτες SW1,SW2,SW3.
+Με τον SW1 εμφανίζονται στα LED's τα ψηφία του πρώτου ΑΕΜ με τον ίδιο τρόπο όπως στο τμήμα 1.
+Με τον SW2 εμφανίζονται στα LED's τα ψηφία του δεύτερου ΑΕΜ.
+Με διαδοχικά πατήματα του SW3 εμφανίζονται στα LED0-LED3 όλα τα ψηφία του αθροίσματος σε μορφή BCD των 2 ΑΕΜ.
+Αρχικά, ορίζουμε τον PORTB ως έξοδο όπως στο τμήμα 1.
+Σαν είσοδο των σημάτων ελέγχου στους διακόπτες χρησιμοποιούμε το PORTD
+και του θέτουμε την τιμή \lstinline!0x00! για να το ορίσουμε ως είσοδο.
+\begin{lstlisting}
+;PART2
+;define PORTD as input
+ser temp
+out PORTB,temp
+clr temp
+out DDRD,temp
+\end{lstlisting}
+
+Στη συνέχεια φορτώνουμε στον καταχωρητή r22,τα σήματα ελέγχου που δόθηκαν στο PORTD και ελέγχουμε για κάθε SW με την εντολή \lstinline!sbrs!
+αν το σήμα που αναφέρεται στον καθένα είναι $1$.
+Aν ναι τότε παρακάμπτει την κλήση ρουτίνας για την εμφάνιση των
+ψηφίων (καθώς η κάρτα ST500 χρησιμοποιεί αντίστροφη λογική για την
+εμφάνιση των LEDs) και ελέγχει με τον ίδιο τρόπο το σήμα για τα επόμενα SW.
+\begin{lstlisting}
+;wait in this loop until the user press a switch
+wait_loop:
+in r22,PIND
+sbrs r22,1
+rcall sw1_pressed
+sbrs r22,2
+rcall sw2_pressed
+sbrs r22,3
+rcall sw3_pressed
+jmp wait_loop
+ret
+\end{lstlisting}
+
+Σε περίπτωση που το SW1 έχει τιμή $0$ (άρα είναι πατημένο) καλείται η ρουτίνα \lstinline!sw1_pressed!.
+Mέσα σε αυτήν την ρουτίνα υπάρχει εμφωλευμένη η \lstinline!sw1_loop!
+η οποία καλείται για όσο το SW1 έχει τιμή 0 (άρα εξακολουθεί να είναι πατημένο).
+Όταν το αντίστοιχο πλήκτρο απελευθερωθεί και άρα το sw1 πάρει τιμή $1$
+καλείται η συνάρτηση \lstinline!show_aem1_digits! που χρησιμοποιήσαμε στο part1.
+\begin{lstlisting}
+;wait until user releases switch 1
+sw1_pressed:
+sw1_loop:
+ in r22,PIND
+ sbrs r22,1
+ jmp sw1_loop
+ rcall show_aem1_digits
+ ret
+Σε περίπτωση που το Sw2 έχει τιμή 0 (αρα 1 στο led) καλείται η ρουτίνα
+sw2_pressed και ακολουθείται η ίδια λογική.
+;wait until user releases switch 2
+sw2_pressed:
+sw2_loop:
+ in r22,PIND
+ sbrs r22,2
+ jmp sw2_loop
+ rcall show_aem2_digits
+ ret
+\end{lstlisting}
+
+Σε περίπτωση που το SW3 έχει τιμή $0$ καλείται η ρουτίνα
+\lstinline!sw3_pressed!.
+Μέσα σε αυτήν υπάρχει εμφωλευμένη η \lstinline!digits0! στην οποία το
+πρόγραμμα επανέρχεται για όσο το SW3 έχει τιμή $0$).
+Όταν το πλήκτρο απελευθερωθεί καλείται η συνάρτηση \lstinline!show_addition_digit1!.
+\begin{lstlisting}
+;wait until user releases switch 3
+sw3_pressed:
+digits0:
+	in r22,PIND
+	sbrs r22,3
+	jmp digits0
+	rcall show_addition_digit1
+\end{lstlisting}
+Στην \lstinline!show_addition_digit1! φορτώνουμε από την SRAM στον καταχωρητή \lstinline!r19!
+το 1ο ψηφίο του αθροίσματος των 2 ΑΕΜ που βρίσκεται στην \lstinline!0x0060!.
+Χρησιμοποιούμε την εντολή com για την αντιστροφή των leds και το εμφανίζουμε στο PORTB με την εντολή
+\lstinline!out!.
+\begin{lstlisting}
+show_addition_digit1:
+	lds r19,0x0060
+	com r19
+	out PORTB,r19
+	ret
+\end{lstlisting}
+
+Μετά την εκτέλεση της συνάρτησης \lstinline!show_addition_digit1! το πρόγραμμα
+μπαίνει στην ρουτίνα \lstinline!pressed1!.
+Αυτή καλείται για όσο η τιμή στον SW3 είναι $1$.
+Όταν η τιμή γίνει $0$ (άρα πατηθεί το πλήκτρο SW3 ξανά)
+το πρόγραμμα πάει στην ρουτίνα \lstinline!digits1! όπου εκεί με τον ίδιο κωδικά όπως στο \lstinline!digits0!
+περιμένει μέχρι να απελευθερωθεί το SW3 για να κληθεί η \lstinline!show_addition_digit2! για την εμφάνιση του 2ου ψηφίου.
+Αυτό επαναλαμβάνεται για την εμφάνιση όλων των ψηφίων.
+\begin{lstlisting}
+pressed1:
+ in r22,PIND
+ sbrc r22,3
+ jmp pressed1
+digits1:
+ in r22,PIND
+ sbrs r22,3
+ jmp digits1
+ rcall show_addition_digit2
+pressed2:
+ in r22,PIND
+ sbrc r22,3
+ jmp pressed2
+digits2:
+ in r22,PIND
+ sbrs r22,3
+ jmp digits2
+ rcall show_addition_digit3
+pressed3:
+ in r22,PIND
+ sbrc r22,3
+ jmp pressed3
+digits3:
+ in r22,PIND
+ sbrs r22,3
+ jmp digits3
+ rcall show_addition_digit4
+ ret
+\end{lstlisting}
+
+Οι συναρτήσεις \lstinline!show_addition_digit2!,\lstinline!3!,\lstinline!4!:
+\begin{lstlisting}
+show_addition_digit2:
+ lds r19,0x0061
+ com r19
+ out PORTB,r19
+ ret
+show_addition_digit3:
+ lds r19,0x0062
+ com r19
+ out PORTB,r19
+ ret
+show_addition_digit4:
+ lds r19,0x0063
+ com r19
+ out PORTB,r19
+ ret
+\end{lstlisting}

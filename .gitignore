@@ -161,3 +161,9 @@ $RECYCLE.BIN/
 *.bat
 *.map
 *.aws
+Debug/
+Release/
+settings/
+*.dep
+*.ewp
+*.eww

@@ -6,7 +6,7 @@
 #define MAX_LITERS 56
 
 #define bit(x) (1<<(x))
-#define bit_is_clear(x,y) ((x)&(bit((y))))
+#define bit_is_clear(sfr,x) (!((sfr) & bit(x)))
 
 typedef struct {
     uint32_t value : 24;
@@ -24,12 +24,13 @@ typedef struct {
 leds check_input(uint8_t t, leds myleds);
 
 void light_leds(leds myleds) {
-    PORTB = *(uint8_t*)&myleds;
+    PORTB = ~(*(uint8_t*)&myleds);
 }
 
 leds init(void) {
-    DDRB = 0xFF;
-    DDRD = 0x00;
+    DDRB = 0xFF; // DDRB as output
+    PORTB = 0xFF; // turn off any leds
+    DDRD = 0x00; // DDRD as input
     leds myleds;
     myleds.hot_count =
         myleds.hot_running =

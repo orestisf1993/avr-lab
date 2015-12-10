@@ -9,16 +9,16 @@ rjmp main
 
 ; TODO: fix whitespace and capitalizations
 main:
-; init stack pointer
-SPI_INIT:
-ldi r25,low(RAMEND)
-out Spl,r25
-ldi r25,high(RAMEND)
-out sph,r25
+    ; init stack pointer
+    SPI_INIT:
+    ldi r25,low(RAMEND)
+    out Spl,r25
+    ldi r25,high(RAMEND)
+    out sph,r25
 
-clr r25
-rcall main_loop
-ret
+    clr r25
+    rcall main_loop
+    ret
 
 light_leds:
     com r16

@@ -7,7 +7,6 @@
 .org 0x0000
 rjmp main
 
-; TODO: fix whitespace and capitalizations
 main:
     ; init stack pointer
     SPI_INIT:
@@ -51,7 +50,7 @@ check_input_0:
     ; turn off emergency stop and cold stop
     ANDI R17, 0b01011111
     ; turn on cold running
-    ORI R17, 0b00000010
+    ORI R17, 0b00000001
     RJMP check_input_1
 check_input_2:
     ; Temperature<SETPOINT and start hot switch
@@ -61,7 +60,7 @@ check_input_2:
     CPI R18, 0b00001010
     BREQ check_input_3
     ; turn on hot running led
-    ORI R17, 0b00000001
+    ORI R17, 0b00000010
     MOV R16, R17
     ; turn off emergency, stop hot leds
     ANDI R17, 0b00100011
@@ -78,15 +77,14 @@ check_input_3:
     BST R16, 2
     BRTS check_input_4
     ; turn off hot running led
-    ; TODO: fix order of hot_running, cold_running
-    ANDI R17, 0b11111110
+    ANDI R17, 0b11111101
     RJMP check_input_1
 check_input_4:
     ; stop cold switch
     BST R16, 4
     BRTS check_input_5
     ; turn off cold running led
-    ANDI R17, 0b11111101
+    ANDI R17, 0b11111110
     ; turn on stop cold led
     ORI R17, 0b00100000
     RJMP check_input_1
@@ -95,7 +93,7 @@ check_input_5:
     BST R16, 5
     BRTS check_input_1
     ; turn off hot running led
-    ANDI R17, 0b11111110
+    ANDI R17, 0b11111101
     ; turn on stop hot led
     ORI R17, 0b01000000
 check_input_1:

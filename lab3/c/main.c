@@ -13,9 +13,8 @@ typedef struct {
 } bitfield24;
 
 typedef struct {
-    // TODO: fix hot_running, cold_running order
-    uint8_t hot_running : 1;
     uint8_t cold_running : 1;
+    uint8_t hot_running : 1;
     uint8_t hot_count : 3;
     uint8_t cold_stop : 1;
     uint8_t hot_stop : 1;
@@ -65,7 +64,7 @@ int main(void) {
                 oldinput = newinput;
             }
         } while ((counter.value += 14) < F_CPU);
-        liters += myleds.hot_running + myleds.cold_running;
+        liters += myleds.cold_running + myleds.hot_running;
     } while (liters < MAX_LITERS);
     light_leds(myleds);
 }

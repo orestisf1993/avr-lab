@@ -13,6 +13,7 @@ typedef struct {
 } bitfield24;
 
 typedef struct {
+    // TODO: fix hot_running, cold_running order
     uint8_t hot_running : 1;
     uint8_t cold_running : 1;
     uint8_t hot_count : 3;

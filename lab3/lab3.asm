@@ -19,6 +19,7 @@ clr r25
 rcall main_loop
 ret
 
+//TODO: use ports etc instead of 0x18
 light_leds:
         com r16
         OUT     0x18, R16
@@ -35,45 +36,68 @@ init:
         RET
 
 check_input:
+		; emergency stop check
         BST     R16, 7
         BRTS    check_input_0
-        ANDI    R17, 0xFC
-        ORI     R17, 0xE0
+		; turn off hot/cold running leds
+        ANDI    R17, 0b11111100
+		; turn on emergency, hot/cold stop leds
+        ORI     R17, 0b11100000
         RJMP    check_input_1
 check_input_0:
+		; start cold switch
         BST     R16, 0
         BRTS    check_input_2
-        ANDI    R17, 0x5F
-        ORI     R17, 0x02
+		; turn off emergency stop and cold stop
+        ANDI    R17, 0b01011111
+		; turn on cold running
+        ORI     R17, 0b00000010
         RJMP    check_input_1
 check_input_2:
+		; Temperature<SETPOINT and start hot switch
+		; check if switch pressed is either SW3 or SW1
         MOV     R18, R16
-        ANDI    R18, 0x0A
-        CPI     R18, 10
+        ANDI    R18, 0b00001010
+        CPI     R18, 0b00001010
         BREQ    check_input_3
-        ORI     R17, 0x01
+		; turn on hot running led
+        ORI     R17, 0b00000001
         MOV     R16, R17
-        ANDI    R17, 0x23
+		; turn off emergency, stop hot leds
+        ANDI    R17, 0b00100011
+		; add 1 to the leds that count hot activations
+		; equal to adding 0b00000100
         SUBI    R16, 252
-        ANDI    R16, 0x1C
+		; only keep the count leds
+        ANDI    R16, 0b00011100
+		; combine results
         OR      R17, R16
         RJMP    check_input_1
 check_input_3:
+		; Temperature>SETPOINT
         BST     R16, 2
         BRTS    check_input_4
-        ANDI    R17, 0xFE
+		; turn off hot running led
+		; TODO: fix order of hot_running, cold_running
+        ANDI    R17, 0b11111110
         RJMP    check_input_1
 check_input_4:
+		; stop cold switch
         BST     R16, 4
         BRTS    check_input_5
-        ANDI    R17, 0xFD
-        ORI     R17, 0x20
+		; turn off cold running led
+        ANDI    R17, 0b11111101
+		; turn on stop cold led
+        ORI     R17, 0b00100000
         RJMP    check_input_1
 check_input_5:
+		; stop hot switch
         BST     R16, 5
         BRTS    check_input_1
-        ANDI    R17, 0xFE
-        ORI     R17, 0x40
+		; turn off hot running led
+        ANDI    R17, 0b11111110
+		; turn on stop hot led
+        ORI     R17, 0b01000000
 check_input_1:
         MOV     R16, R17
         RET

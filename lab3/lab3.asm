@@ -25,12 +25,12 @@ light_leds:
     OUT     PORTB, R16
     RET
 init:
-; DDRB as output
+    ; DDRB as output
     LDI     R16, 255
     OUT     DDRB, R16
-; turn off any leds
+    ; turn off any leds
     OUT     PORTB, R16
-; DDRD as input
+    ; DDRD as input
     LDI     R16, 0
     OUT     DDRD, R16
     RET

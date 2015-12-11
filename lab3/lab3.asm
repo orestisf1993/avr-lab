@@ -2,6 +2,12 @@
 ; Floros-Malivitsis Orestis
 ; Antoniadou Alexandra
 
+#define F_CPU 4000000
+#define MAX_LITERS 56
+#define GET_HIGH_BYTE(X) ((X)>>16)
+#define GET_MID_BYTE(X) ((X)>>8 & 0xff)
+#define GET_LOW_BYTE(X) ((X) & 0xff)
+
 .cseg
 .include "m16def.inc"
 .org 0x0000
@@ -150,12 +156,9 @@ counter_increase_and_compare:
     MOV R17, counter_mid_byte
     MOV R18, counter_high_byte
     ; compare counter to F_CPU
-    CPI counter_low_byte, 0
-    ; TODO: change to #define and shifts
-    ; F_CPU>>8 & 0xff == 9
-    SBCI R17, 9
-    ; F_CPU>>16 == 61
-    SBCI R18, 61
+    CPI counter_low_byte, GET_LOW_BYTE(F_CPU)
+    SBCI R17, GET_MID_BYTE(F_CPU)
+    SBCI R18, GET_HIGH_BYTE(F_CPU)
     BRCS inner_loop
     ; subi + 2*sbci + 2*mov + cpi + 2*sbci + brcs = 10 cycles usually
     ; here 1s passed, increase the liters value
@@ -170,8 +173,7 @@ counter_increase_and_compare:
     ADD R16, R17
     ; add them on liters
     ADD liters, R16
-    ; TODO: #define MAX_LITERS 56
-    CPI liters, 56
+    CPI liters, MAX_LITERS
     BRCS outter_loop
     ; here max liters are reached, display leds once more
     MOV R16, my_leds

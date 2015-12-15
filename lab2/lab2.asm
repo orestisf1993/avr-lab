@@ -21,8 +21,8 @@ out Spl,r25
 ldi r25,high(RAMEND)
 out sph,r25
 
-; define PORTB as exit
-ser temp
+; define PORTB as exit
+ser temp
 out DDRB,temp
 ; turn off all leds
 out PORTB, temp
@@ -218,7 +218,6 @@ display_average:
 	rcall delay5
 
 read_data:
-	;adiw?
     add ZL, whichpressed
     add ZL, whichpressed
     lpm r16, Z
@@ -271,99 +270,115 @@ flash_leds:
 ; Delay 8 000 000 cycles
 ; 2s at 4 MHz
 delay2:
-	push r18
-	push r19
-	push r20
+    push r18
+    push r19
+    push r20
     ldi  r18, 41
     ldi  r19, 150
     ldi  r20, 128
 L1delay2:
-	dec  r20
+    dec  r20
     brne L1delay2
     dec  r19
     brne L1delay2
     dec  r18
     brne L1delay2
-	; restore used registers
-	pop r20
-	pop r19
-	pop r18
-	ret
+    ; restore used registers
+    pop r20
+    pop r19
+    pop r18
+    ret
 
 ; Delay 20 000 000 cycles
 ; 5s at 4 MHz
 delay5:
-	push r18
-	push r19
-	push r20
+    push r18
+    push r19
+    push r20
     ldi  r18, 102
     ldi  r19, 118
     ldi  r20, 194
 L1delay5: 
-	dec  r20
+    dec  r20
     brne L1delay5
     dec  r19
     brne L1delay5
     dec  r18
     brne L1delay5
-	; restore used registers
-	pop r20
-	pop r19
-	pop r18
+    ; restore used registers
+    pop r20
+    pop r19
+    pop r18
     ret
 
 ; Delay 2 000 000 cycles
 ; 500ms at 4 MHz
 delay05:
-	push r18
-	push r19
-	push r20
+    push r18
+    push r19
+    push r20
     ldi  r18, 11
     ldi  r19, 38
     ldi  r20, 94
 L1delay05: 
-	dec  r20
+    dec  r20
     brne L1delay05
     dec  r19
     brne L1delay05
     dec  r18
     brne L1delay05
     rjmp PC+1
-	; restore used registers
-	pop r20
-	pop r19
-	pop r18
+    ; restore used registers
+    pop r20
+    pop r19
+    pop r18
     ret
 
-; params r24 as sum
-; returns r25 as decimals part, r24 as halfs flag
+; Το r24 είναι το όρισμα της συνάρτησης που είναι το ακέραιο μέρος του αθροίσματος.
+; Δεν χρειαζόμαστε το δεκαδικό μέρος για να κάνουμε διαίρεση με ακρίβεια 0.5
+; καθώς δεν επηρρεάζει ποτέ το αποτέλεσμα.
+; Επιστρέφεται στον r24 το ακέραιο μέρος και αν υπάρχει 0.5 στο δεκαδικό μερος
+; το r25 παίρνει τιμή 1.
 find_average:
-    ; divide sum by 6
-    ldi r18,-85
+    ; Ακέραια διαίρεση με το 6.
+    ldi r18,171
     mul r24,r18
+    ; Παίρνουμε το most significant byte από το αποτέλεσμα.
+    ; (το να πετάμε το least significant byte είναι ισάξιο με διαίρεση με το 256).
     mov r18,r1
+    ; και το κάνουμε δύο φορές δεξί shift (διαίρεση με το 4).
     lsr r18
     lsr r18
+    ; Τώρα στον r18 έχουμε το ακέραιο μέρος της διαίρεσης.
+    ; Συνολικά: r24 * 171 / 4 / 256 που είναι περίπου ίσο με r24 / 6
+    
+    ; Υπολογίζουμε το r24 % 6 στον r24.
+    ; Αρχίζουμε με το ακέραιο μέρος της διαίρεσης (x div 6) και κάνουμε τις πράξεις:
     mov r25,r18
     lsl r25
     add r25,r18
     lsl r25
+    ; Το αποτέλεσμα είναι:
+    ; r25 = 2*(2*(x div 6) + (x div 6)) = 6 * (x div 6)
     sub r24,r25
-    ; r24 is now sum % 6
+    ; x - 6 * (x div 6) = x mod 6
+    ; Το r24 είναι τώρα sum % 6
     cpi r24,2
     brlo round_down
     cpi r24,5
     brlo round_half
-	; round up
+    ; Αν το mod είναι μεγαλύτερο από 5 στρογγυλοποιούμε προς τα πάνω.
     subi r18,-1
     ldi r25,0
     mov r24,r18
     ret
 round_down:
+    ; Αν το mod είναι μικρότερο από 2 στρογγυλοποιούμε προς τα κάτω.
     ldi r25,0
     mov r24,r18
     ret
 round_half:
+    ; Αν το mod είναι μικρότερο από 5 στρογγυλοποιούμε στο μισό.
     ldi r25,1
     mov r24,r18
     ret

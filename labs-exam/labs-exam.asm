@@ -20,6 +20,8 @@ ldi r25,high(RAMEND)
 out sph,r25
 
 rcall test_ex2
+rcall test_ex4
+
 rcall test_succeeded
 
 ; Exercise 1
@@ -80,3 +82,62 @@ ret
 .undef yvalue
 .undef result_L
 .undef result_H
+
+; Exercise 4
+; https://en.wikipedia.org/wiki/Parity_bit
+; Even parity bit.
+.def my_byte=r16
+.def counter=r17
+.def ones_count=r18
+.def initial_byte=r0
+ex4:
+; Backup byte input
+mov initial_byte, my_byte
+ldi counter, 7
+clr ones_count
+; Check each byte. This loop can be unrolled.
+loop4:
+; Sequentially bring each bit to the LSbit.
+lsr my_byte
+sbrc my_byte, 0
+inc ones_count
+dec counter
+tst counter
+brne loop4
+; Find parity
+; ones_count is even when bit0 is set.
+bst ones_count, 0
+bld initial_byte, 0
+clt
+ret
+
+test_ex4:
+; bit0 shouldn't matter.
+; 0 ones => odd
+ldi my_byte, 0b00000001
+rcall ex4
+sbrc my_byte, 0
+rcall test_failed
+
+; 0 ones => odd
+ldi my_byte, 0b00000000
+rcall ex4
+sbrc my_byte, 0
+rcall test_failed
+
+; 3 ones => even
+ldi my_byte, 0b10100010
+rcall ex4
+sbrs my_byte, 0
+rcall test_failed
+
+; 7 ones => even
+ldi my_byte, 0b11111111
+rcall ex4
+sbrs my_byte, 0
+rcall test_failed
+ret
+.undef my_byte
+.undef counter
+.undef ones_count
+.undef initial_byte

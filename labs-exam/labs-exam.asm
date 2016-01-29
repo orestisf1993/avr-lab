@@ -22,6 +22,7 @@ out sph,r25
 rcall test_ex2
 rcall test_ex4
 rcall test_ex6
+rcall test_ex10
 
 rcall test_succeeded
 
@@ -218,4 +219,76 @@ ret
 .undef sum_H
 .undef counter
 .undef temp_byte
+.undef zero_reg
+
+; Exercise 10
+; We need 2 bytes since 16 * 256 fits.
+.def sum_L=r24
+.def sum_H=r25
+.def counter=r16
+.def temp_register=r17
+.def zero_reg=r18
+ex10:
+clr sum_L
+clr sum_H
+ldi counter, 16
+; X points to r0
+clr XL
+clr XH
+clr zero_reg
+clc
+; Sum registers r0 to r15
+loop10:
+ld temp_register, X+
+add sum_L, temp_register
+adc sum_H, zero_reg
+dec counter
+tst counter
+brne loop10
+ret
+
+test_ex10:
+.def temp=r20
+ldi temp, 10
+mov r0, temp
+mov r5, temp
+mov r7, temp
+ldi temp, 255
+mov r1, temp
+mov r2, temp
+mov r15, temp
+ldi temp, 0
+mov r3, temp
+ldi temp, 100
+mov r4, temp
+mov r6, temp
+mov r8, temp
+mov r9, temp
+mov r10, temp
+ldi temp, 200
+mov r11, temp
+mov r12, temp
+mov r13, temp
+ldi temp, 3
+mov r14, temp
+; Garbage data:
+ldi r16, 1
+ldi r17, 2
+ldi r18, 3
+ldi r19, 4
+; Expected result = 10 + 255 + 255 + 0 + 100 + 10 + 100 + 10 + 100 + 100 + 100 + 200 + 200 + 200 + 3 + 255
+; res = 1897 == 0x76a
+rcall ex10
+ldi temp, 0x6a
+cpse temp, sum_L
+jmp test_failed
+ldi temp, 0x07
+cpse temp, sum_H
+jmp test_failed
+ret
+.undef temp
+.undef sum_L
+.undef sum_H
+.undef counter
+.undef temp_register
 .undef zero_reg

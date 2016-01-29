@@ -19,6 +19,7 @@ out Spl,r25
 ldi r25,high(RAMEND)
 out sph,r25
 
+rcall test_ex2
 rcall test_succeeded
 
 ; Exercise 1
@@ -40,3 +41,42 @@ brne loop1
 ret
 .undef counter
 .undef value
+
+; Exercise 2
+.def xvalue=r16
+.def yvalue=r17
+.def result_L=r24
+.def result_H=r25
+ex2:
+push xvalue
+push yvalue
+
+clr result_H
+mov result_L, xvalue
+; Shift left 2 times => x = x * 4
+; Be carefull with overflow.
+lsl result_L
+rol result_H
+lsl result_L
+rol result_H
+add result_L, yvalue
+clr yvalue
+adc result_H, yvalue
+
+pop yvalue
+pop xvalue
+ret
+
+test_ex2:
+ldi xvalue, 240
+ldi yvalue, 100
+rcall ex2
+cpi result_L, 0x24
+brne test_failed
+cpi result_H, 0x04
+brne test_failed
+ret
+.undef xvalue
+.undef yvalue
+.undef result_L
+.undef result_H

@@ -21,6 +21,7 @@ out sph,r25
 
 rcall test_ex2
 rcall test_ex4
+rcall test_ex6
 
 rcall test_succeeded
 
@@ -141,3 +142,80 @@ ret
 .undef counter
 .undef ones_count
 .undef initial_byte
+
+; Exercise 6
+.def sum_L=r24
+.def sum_H=r25
+.def counter=r16
+.def temp_byte=r17
+.def zero_reg=r0
+ex6:
+clr sum_L
+clr sum_H
+clr zero_reg
+clc
+ldi counter, 8
+
+loop6:
+; Only sum for counter values 7,5,3,1 => bit0 is set
+bst counter, 0
+; ld should be above brtc so that we always point to the next byte after each loop.
+ld temp_byte, X+
+brtc skip_sum_calc
+add sum_L, temp_byte
+adc sum_H, zero_reg
+skip_sum_calc:
+dec counter
+tst counter
+brne loop6
+clt
+ret
+
+.def temp=r20
+test_ex6:
+ldi XL, low(0x60)
+ldi XH, high(0x60)
+; Store stuff in memory
+ldi temp, 25
+; 1st = 25
+st X+, temp
+; 2nd = 25
+st X+, temp
+; 3rd = 33
+ldi temp, 33
+st X+, temp
+; 4th = 55
+ldi temp, 55
+st X+, temp
+; 5th = 55
+st X+, temp
+; 6th = 55
+st X+, temp
+; 7th = 255
+ldi temp, 255
+st X+, temp
+; 8th = 255
+st X+, temp
+; Junk data:
+ldi temp, 100
+st X+, temp
+st X+, temp
+clr temp
+st X+, temp
+; Reset X
+ldi XL, low(0x60)
+ldi XH, high(0x60)
+rcall ex6
+ldi temp, 0x86
+cpse sum_L, temp
+jmp test_failed
+ldi temp, 0x01
+cpse sum_H, temp
+jmp test_failed
+ret
+.undef temp
+.undef sum_L
+.undef sum_H
+.undef counter
+.undef temp_byte
+.undef zero_reg

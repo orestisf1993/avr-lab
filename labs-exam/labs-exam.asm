@@ -40,7 +40,6 @@ ldi value, MY_VALUE
 loop1:
 st X+, value
 dec counter
-tst counter
 brne loop1
 ret
 .undef counter
@@ -104,7 +103,6 @@ lsr my_byte
 sbrc my_byte, 0
 inc ones_count
 dec counter
-tst counter
 brne loop4
 ; Find parity
 ; ones_count is even when bit0 is set.
@@ -167,7 +165,6 @@ add sum_L, temp_byte
 adc sum_H, zero_reg
 skip_sum_calc:
 dec counter
-tst counter
 brne loop6
 clt
 ret
@@ -243,7 +240,6 @@ ld temp_register, X+
 add sum_L, temp_register
 adc sum_H, zero_reg
 dec counter
-tst counter
 brne loop10
 ret
 

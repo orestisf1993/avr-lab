@@ -23,6 +23,7 @@ rcall test_ex2
 rcall test_ex4
 rcall test_ex6
 rcall test_ex10
+rcall test_ex25
 
 rcall test_succeeded
 
@@ -288,3 +289,92 @@ ret
 .undef counter
 .undef temp_register
 .undef zero_reg
+
+; Exercise 25
+; Calculate 4 * x + y / 2 for signed x, y with full accuracy.
+.def xvalue=r16
+.def yvalue=r17
+.def yvalue_fract=r19
+.def ans_L=r24
+.def ans_H=r25
+ex25:
+; Do y / 2 w/ fract
+rcall full_div2
+; Do x * 4
+ldi ans_H, 4
+muls xvalue, ans_H
+movw ans_L, r0
+; Add the results
+add ans_L, yvalue
+clr r1
+adc ans_H, r1
+sbrc yvalue, 7
+dec ans_H
+ret
+
+full_div2:
+mov yvalue_fract, yvalue
+sbrc yvalue, 7
+subi yvalue, -1
+asr yvalue
+andi yvalue_fract, 1
+ret
+
+.def expected_L=r20
+.def expected_H=r21
+.def expected_fract=r22
+.MACRO CHECK25
+ldi xvalue, @0
+ldi yvalue, @1
+ldi expected_L, low(4 * @0 + @1 / 2)
+ldi expected_H, high(4 * @0 + @1 / 2)
+rcall ex25
+cpse ans_L, expected_L
+jmp test_failed
+cpse ans_H, expected_H
+jmp test_failed
+.ENDMACRO
+
+.MACRO CHECKDIV2
+ldi yvalue, @0
+ldi expected_L, ((@0) / 2)
+ldi expected_fract, (ABS(@0) % 2)
+rcall full_div2
+cpse yvalue, expected_L
+jmp test_failed
+cpse yvalue_fract, expected_fract
+jmp test_failed
+.ENDMACRO
+
+test_ex25:
+; test full_div2
+CHECKDIV2 11
+CHECKDIV2 0
+CHECKDIV2 5
+CHECKDIV2 5
+CHECKDIV2 -5
+CHECKDIV2 -101
+CHECKDIV2 -6
+
+; test ex25
+CHECK25 100, 10
+CHECK25 100, 10
+CHECK25 4, 5
+CHECK25 -4, 101
+CHECK25 -100, 0
+CHECK25 -127, 127
+CHECK25 0, 0
+CHECK25 0, 1
+CHECK25 0, -1
+CHECK25 -10, -10
+CHECK25 -100, -100
+ret
+
+.undef expected_L
+.undef expected_H
+.undef expected_fract
+.undef xvalue
+.undef yvalue
+.undef ans_L
+.undef ans_H
+.undef yvalue_fract
